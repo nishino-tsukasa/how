@@ -1,41 +1,81 @@
-# How — a Cursor skill for explaining codebases
+# How — explain codebase architecture in Codex
 
-A Cursor plugin that adds the `/how` skill: ask how a subsystem, feature, or flow works, and the agent produces a clear architectural explanation at the level of a senior engineer onboarding onto a new area.
+A Codex-ready fork of [poteto/how](https://github.com/poteto/how), originally created by Lauren Tan for Cursor. The `how` skill traces a subsystem, feature, or runtime flow and gives an engineer a working mental model backed by source references.
 
 ## What it does
 
-Two modes, picked automatically from your question:
+- **Explain** (default): explore the implementation and explain the concepts, execution flow, boundaries, relevant files, and gotchas.
+- **Critique** (on request): explain first, then assess architectural issues through independent review lenses and summarize the evidence and tradeoffs.
 
-- **Explain** (default) — explore the codebase and produce a structured explanation with sections for Overview, Key Concepts, How It Works, Where Things Live, and Gotchas.
-- **Critique** — explain first, then spawn multiple independent critics across different models to surface architectural problems.
+Simple questions run directly in the current agent. Complex questions split into 2–4 exploration angles when the host exposes subagent tools. Critique uses 2–3 critics within the host's concurrency limits. Agents use the host's configured model by default. If delegation is unavailable, the skill performs the passes in the current agent and states that no independent reviews ran. All exploration and critique are read-only.
 
-For complex questions that span multiple files or services, the skill decomposes the question into 2–4 parallel exploration angles and spawns explorer subagents that gather findings in parallel. A synthesis agent then reconciles their findings into a single coherent explanation. Simple questions skip the fan-out and run end-to-end in a single agent.
+## Install as a Codex plugin
 
-## Example prompts
+On a Codex CLI with `codex plugin` support:
 
-- "How does message virtualization work?"
-- "Walk me through what happens when a user sends a message"
-- "How is the auth service structured? Also critique the design."
-- "How does the auth middleware check permissions?"
+```sh
+codex plugin marketplace add nishino-tsukasa/how --ref main
+codex plugin add how@how-plugins
+codex plugin list --marketplace how-plugins
+```
+
+In the desktop plugin browser, select the **How Plugins** marketplace and install **How** after adding the source. Start a new chat after installation so it discovers the skill. The exact browser UI depends on the client version; the commands above provide the CLI route.
+
+Invoke the plugin skill with `$how:how` (or select **how:how** from the skill picker):
+
+```text
+$how:how How does the auth middleware check permissions?
+$how:how Walk me through what happens when a user sends a message.
+$how:how Explain how the auth service works, then critique its architecture.
+```
+
+For updates:
+
+```sh
+codex plugin marketplace upgrade how-plugins
+codex plugin add how@how-plugins
+```
+
+Check `codex plugin list --marketplace how-plugins` and start a new chat to pick up the updated skill.
+
+## Use as a standalone skill
+
+Copy the complete `skills/how/` directory, including `references/`, into `~/.agents/skills/how/`, or into `.agents/skills/how/` in a target repository. Choose either the standalone skill or the plugin to avoid duplicate discovery. This source repository already links `.agents/skills` to `skills`, so Codex can discover the skill while working in this checkout.
+
+The standalone skill is invoked with `$how`; the plugin installation uses the `how:how` namespace.
+
+## Codex adaptation
+
+- Adds a portable root `plugin.json`, a `.codex-plugin/plugin.json` compatibility manifest, and a repository marketplace at `.agents/plugins/marketplace.json`.
+- Replaces Cursor-specific Task parameters and fixed Claude/Composer/GPT model IDs with the host's exposed agent tools and configured model.
+- Keeps the original explanation and critique prompts, with host-neutral source reading, bounded concurrency, read-only assignments, and a single-agent fallback.
+- Uses distinct critique lenses instead of promising a review across different model vendors.
+
+The `.cursor-plugin/plugin.json` manifest remains for Cursor. Its host is not tested by this adaptation.
 
 ## Structure
 
 ```text
 how/
-├── .cursor-plugin/
-│   └── plugin.json
-└── skills/
-    └── how/
-        ├── SKILL.md
-        └── references/
-            ├── explainer-prompt.md
-            ├── explorer-prompt.md
-            ├── critic-prompt.md
-            └── critique-rubric.md
+├── plugin.json
+├── .codex-plugin/plugin.json
+├── .cursor-plugin/plugin.json
+├── .agents/
+│   ├── plugins/marketplace.json
+│   └── skills -> ../skills
+└── skills/how/
+    ├── SKILL.md
+    └── references/
+        ├── explainer-prompt.md
+        ├── explorer-prompt.md
+        ├── critic-prompt.md
+        └── critique-rubric.md
 ```
 
-`SKILL.md` contains the top-level routing logic (simple vs. complex, explain vs. critique). The `references/` folder holds the prompt templates that the agent hands to each subagent, plus the critique rubric used during the critique pass.
+The plugin has no MCP servers, external services, or credentials to configure. Subagents are optional; the skill does not change your Codex settings.
+
+Packaging follows the [OpenAI plugin documentation](https://developers.openai.com/plugins/build/plugins). For host settings, see [Codex subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents).
 
 ## License
 
-MIT
+MIT. The original copyright and license are retained in [LICENSE](LICENSE).

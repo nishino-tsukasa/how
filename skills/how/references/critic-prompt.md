@@ -18,9 +18,15 @@ You are reviewing the architecture of a codebase subsystem. An explanation of ho
 
 {CRITIQUE_RUBRIC_CONTENTS}
 
+## Primary Lens
+
+{CRITIQUE_LENS}
+
 ## Instructions
 
 Read the files listed above. Use the explanation as a map, but form your own opinions from the code itself — the explanation might miss things or frame them charitably.
+
+Inspect source only. Make no repository changes and do not delegate further. Focus on the assigned lens, while reporting issues outside it when the source evidence is compelling.
 
 Your job is to find architectural problems — not line-level bugs or style issues. Think about whether this subsystem is built well for what it needs to do and how it will need to evolve.
 

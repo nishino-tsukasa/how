@@ -1,0 +1,12 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "how",
+  "version": "0.2.0",
+  "description": "Explain codebase architecture with code evidence and optional independent architectural critiques.",
+  "author": {
+    "name": "Lauren Tan"
+  },
+  "repository": "https://github.com/nishino-tsukasa/how",
+  "license": "MIT",
+  "keywords": ["explanation", "architecture", "onboarding", "exploration"]
+}

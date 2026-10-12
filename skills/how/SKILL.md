@@ -1,140 +1,82 @@
 ---
 name: how
-description: Explain how something works in this codebase by exploring code and producing a clear architectural explanation. Optionally critique the architecture for issues.
+description: Explain how a subsystem, feature, or runtime flow works in the current codebase using source evidence. Also use when the user asks to critique that architecture after explaining it.
 ---
 
 # How
 
-Explore the codebase to answer "how does X work?" questions. Produce clear architectural explanations at the level of a senior engineer onboarding onto a subsystem — enough to build a working mental model, not so much that it reads like annotated source code.
+Build a working mental model for an engineer onboarding onto a subsystem. Trace the actual implementation, explain its boundaries and data flow, and cite the files and symbols that support the explanation.
 
-Two modes:
+Use **Explain** by default. Add **Critique** only when the user asks for architectural issues, tradeoffs, or improvements.
 
-1. **Explain** (default) — explore the codebase and produce a clear explanation
-2. **Critique** — explain first, then spawn multiple models to independently identify architectural issues
+## Host and delegation
 
-## Explain Mode
+This workflow uses the tools available in the current host. In Codex, use the exposed subagent tools (for example, `spawn_agent` and its wait tools, or the desktop `collaboration` namespace) with their actual schemas. Omit model overrides by default so agents use the host's configured model. If the user requests a model, use it only when the host supports it; report an unavailable requested model instead of silently substituting one.
 
-### Step 1 — Understand the Question and Assess Complexity
+Delegated exploration and critique are read-only. Put the repository path, question, assigned angle, and this boundary in every agent prompt: inspect source, return findings, make no changes, and do not delegate further. Use a read-only agent configuration when the host offers one; otherwise enforce the boundary through the task instructions. Choose a fresh context when supported and include the relevant prompt template contents so the agent has a self-contained assignment.
 
-Parse what the user is asking about. They might say:
+Respect the host's available concurrency. Queue remaining angles when slots are limited, wait for every assigned result, and close completed agents when the host supports closing them. If an agent fails, finish that angle yourself or retry within the available tools, and identify any unresolved gap.
 
-- "How does message virtualization work?" — a subsystem
-- "How do we handle billing for on-demand usage?" — a feature flow
-- "How is the auth service structured?" — an architectural overview
-- "Walk me through what happens when a user sends a message" — a runtime trace
+If subagent tools are unavailable or delegation is prohibited by higher-priority instructions, perform the same exploration and critique passes yourself. Describe the actual execution accurately: sequential passes in one agent are not independent reviews. Enabling agents or changing host configuration is outside this workflow.
 
-Identify the scope. If it's ambiguous, make your best guess and state your interpretation before exploring. Don't ask — explore and let the user redirect if you're off.
+## Explain
 
-**Assess complexity to decide the approach:**
+### 1. Scope the question
 
-- **Simple** (a single module, a small utility, a narrow question like "how does function X work"): Skip explorer agents entirely. The explainer agent explores and explains in a single pass. Go directly to Step 2b.
-- **Complex** (a subsystem spanning multiple files/services, a cross-cutting feature, a full architectural overview): Spawn parallel explorer agents first, then hand off to the explainer. Go to Step 2a.
+Identify the subsystem, feature, or runtime path the user wants to understand. If the scope is ambiguous, state a reasonable interpretation and explore; ask only when the ambiguity blocks useful work.
 
-When in doubt, lean toward the simple path — you can always spawn explorers if the explainer hits a wall.
+- **Simple:** one module, a small utility, or a narrow call path. Explore and explain directly in the current agent.
+- **Complex:** multiple services or files, a cross-cutting feature, or a broad architectural overview. Split into 2–4 distinct exploration angles and delegate within the host's limits. For example: data model, runtime orchestration, and rendering or external integrations.
 
-### Step 2a — Explore (complex questions only)
+When in doubt, start with the simple path and expand only if the evidence requires it.
 
-Decompose the question into 2-4 parallel exploration angles. Each angle should cover a distinct slice of the subsystem so the explorers aren't duplicating work. For example, if the question is "how does message virtualization work?", you might split into:
+### 2. Explore
 
-- Explorer 1: the data model and state management
-- Explorer 2: the rendering pipeline and DOM interaction
-- Explorer 3: the scroll/measurement infrastructure
+For complex questions, read [references/explorer-prompt.md](references/explorer-prompt.md) and give each explorer the filled template plus its assigned angle. For simple questions or the single-agent fallback, use the same evidence criteria yourself.
 
-The right decomposition depends on the question — use your judgment. For narrow questions, 2 explorers is fine. For broad subsystems, use up to 4.
+Use the host's source search and file-reading tools. With shell access, start with `rg --files` and `rg` for entry points and symbols. Trace callers, callees, state changes, and boundary inputs/outputs until the relevant trigger-to-result path is accounted for. Read implementations rather than inferring behavior from names. Mark any untraceable link as an open question.
 
-Spawn all explorers in a single message:
+Exploration is complete when each angle provides the path it traced, code references, boundaries, and unresolved questions. Wait for all delegated findings before synthesis.
 
-- `subagent_type`: `generalPurpose`
-- `model`: `gpt-5.4`
-- `readonly`: `true`
+### 3. Explain and present
 
-Each explorer gets the same base prompt from `references/explorer-prompt.md`, plus a specific exploration angle telling it which slice to focus on. Each explorer should:
-- Start broad: Glob for relevant directories, Grep for key types/interfaces/class names
-- Follow the thread: once you find an entry point, trace the call chain — callers, callees, data flow, type definitions
-- Read the actual code, don't guess from file names
-- Stop when you can describe the full path from input to output (or from trigger to effect) without hand-waving any step
-- Note things that are surprising, non-obvious, or that a newcomer would get wrong
+Read [references/explainer-prompt.md](references/explainer-prompt.md) for the communication style and output format. The current agent synthesizes the findings; for simple questions, it writes from its own exploration. Resolve conflicting claims by checking the source. Distinguish code evidence, inference, and behavior that would require runtime verification.
 
-Each explorer returns structured findings: the components it found, the flow it traced, the files it read, and anything non-obvious. Overlap between explorers is fine — the explainer will reconcile.
+Use these sections when they help the reader:
 
-Then proceed to Step 3.
+- **Overview:** what the subsystem does and why it exists.
+- **Key Concepts:** the types, services, and abstractions needed to follow it.
+- **How It Works:** the trigger, execution flow, data transformations, and decision points.
+- **Where Things Live:** the files a newcomer should start reading.
+- **Gotchas:** non-obvious behavior, sharp edges, and evidence gaps.
 
-### Step 2b — Direct Explain (simple questions)
+Follow the user's language and requested level of detail. Reference concrete files and symbols. Include a diagram only when it makes the flow easier to understand.
 
-Spawn a single Task subagent that explores and explains in one pass:
+## Critique
 
-- `subagent_type`: `generalPurpose`
-- `model`: `claude-opus-4.6`
-- `readonly`: `true`
+### 1. Explain first
 
-This agent does its own exploration (Glob, Grep, Read) and writes the explanation directly. Read `references/explainer-prompt.md` for the communication style and output format — the agent follows the same structure, it just doesn't have explorer findings as input.
+Complete the Explain flow so the architectural assessment is grounded in the actual implementation.
 
-Proceed to Step 4.
+### 2. Gather critiques
 
-### Step 3 — Synthesize (complex questions only)
+Read [references/critic-prompt.md](references/critic-prompt.md) and [references/critique-rubric.md](references/critique-rubric.md). When delegation is available, launch 2–3 independent critics with distinct primary lenses, such as:
 
-Once all explorers have returned, spawn a single Task subagent to synthesize their findings into one coherent explanation:
+- abstraction fit and boundary discipline;
+- data model and state transitions;
+- evolution readiness and complexity versus value.
 
-- `subagent_type`: `generalPurpose`
-- `model`: `claude-opus-4.6`
-- `readonly`: `true`
+Each critic gets the explanation, relevant file paths, filled prompt template, rubric, and its assigned lens. Critics must verify their claims against source and return concrete evidence and impact. Keep their reports separate until all have returned. Different lenses and fresh contexts provide independent judgments; this does not imply different models were used.
 
-The explainer gets all explorers' findings and writes the human-facing explanation (see output format below). Read `references/explainer-prompt.md` for the full prompt template. The explainer reconciles overlapping findings, resolves contradictions, and weaves the separate slices into a unified picture.
+With the single-agent fallback, run the relevant lenses sequentially and disclose that no independent critics ran. An empty critique is valid when the evidence supports the design.
 
-### Step 4 — Present
+### 3. Lead judgment
 
-Take the explainer's output and present it to the user. You may lightly edit for clarity or add context from the conversation, but don't substantially rewrite — the explainer agent's communication is the product.
+Check the evidence, merge overlapping findings, and distinguish intentional tradeoffs from demonstrated problems. Categorize findings:
 
-### Output Format
+- **Act on:** architectural problems worth addressing now.
+- **Consider:** real concerns with an unclear cost/benefit.
+- **Noted:** valid, lower-priority observations.
+- **Dismissed:** unsupported claims, missing context, or style preferences.
 
-The explanation should follow this structure, but adapt it to what makes sense for the question. Not every section is needed for every question.
-
-**Overview** — 1-2 paragraphs. What is this thing, what does it do, why does it exist. Someone should be able to read this and decide whether they need to keep reading.
-
-**Key Concepts** — The important types, services, or abstractions. Brief definition of each, not exhaustive — just the ones needed to understand the rest.
-
-**How It Works** — The core of the explanation. Walk through the flow: what triggers it, what happens step by step, where does data go, what are the decision points. Use prose, not pseudocode. Reference specific files and functions so the reader can go look, but don't dump code blocks unless a specific snippet is genuinely necessary to understand the point.
-
-**Where Things Live** — A brief map of the relevant files/directories. Not every file — just the ones someone would need to find to start working in this area.
-
-**Gotchas** — Things that are non-obvious, surprising, or that would trip someone up. Historical context that explains why something looks weird. Known sharp edges.
-
-## Critique Mode
-
-Triggered when the user asks for architectural issues, problems, or improvements — not just understanding.
-
-### Step 1 — Explain First
-
-Run the full explain flow above (Steps 1-4). You need to understand the architecture before you can critique it.
-
-### Step 2 — Spawn Critics
-
-After the explanation is complete, spawn architectural critics. Launch all in a single message:
-
-| Subagent | Model |
-|----------|-------|
-| Critic A | `claude-opus-4.6` |
-| Critic B | `composer-2` |
-| Critic C | `gpt-5.4` |
-
-For each critic:
-- `subagent_type`: `generalPurpose`
-- `model`: the model from the table. These are starting suggestions — escalate to a higher reasoning tier of the same model family when the architecture warrants deeper analysis.
-- `readonly`: `true`
-
-Read `references/critic-prompt.md` for the prompt template. Each critic gets:
-1. The explanation from Step 1 (so they don't waste time re-exploring)
-2. The relevant file paths (so they can read the actual code)
-3. The architectural critique rubric from `references/critique-rubric.md`
-
-### Step 3 — Lead Judgment
-
-You're a pragmatic lead, not an aggregator.
-
-Categorize findings:
-- **Act on** — Architectural problems worth fixing now
-- **Consider** — Real concerns, but the cost/benefit is unclear
-- **Noted** — Valid observations, low priority
-- **Dismissed** — Wrong, missing context, or style preference
-
-Present the explanation first (from Step 1), then the critique verdict below it. The explanation should stand on its own — someone who just wants to understand the system shouldn't have to wade through critique.
+Present the explanation before the critique verdict. Retain evidence and impact for actionable findings, and report incomplete coverage. This skill produces an explanation and assessment; implement fixes only when the user separately authorizes them.

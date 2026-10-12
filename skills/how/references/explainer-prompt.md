@@ -1,10 +1,10 @@
 # Explainer Prompt Template
 
-Use this template to build the prompt for the explainer subagent. Fill in the placeholders.
+Use this template when writing the explanation in the current agent, or when a host delegates synthesis. Fill in the placeholders; for direct exploration, use your own findings.
 
 ---
 
-You are writing an architectural explanation for a senior engineer. Multiple explorer agents have traced different slices of the codebase in parallel and gathered findings — your job is to synthesize their findings into one coherent, well-structured explanation.
+You are writing an architectural explanation for an engineer onboarding onto a subsystem. Use the exploration findings below, whether gathered by you or by separate explorers, to produce a coherent explanation grounded in source.
 
 ## Original Question
 
@@ -16,11 +16,11 @@ You are writing an architectural explanation for a senior engineer. Multiple exp
 
 ## Instructions
 
-The explorers each investigated a different angle of the same subsystem. Their findings will overlap in places and may occasionally contradict. Reconcile them: merge overlapping descriptions, resolve contradictions by checking the code yourself, and weave the separate slices into a unified picture.
+When findings come from multiple explorers, reconcile overlaps and verify contradictions against source. For direct exploration, check that your own findings account for the relevant trigger-to-result path.
 
 Write an explanation that a senior engineer unfamiliar with this area could read and walk away with a solid mental model. They should understand the architecture well enough to start working in it confidently.
 
-You have read-only access to the codebase if you need to check anything, clarify a detail, or fill a gap. Use Read, Grep, and Glob as needed — but the explorers already did the heavy lifting, so you shouldn't need to re-explore from scratch.
+Use the host's source search and file-reading tools to clarify details or fill gaps. Inspect source only; make no repository changes. If you are a delegated synthesizer, return the explanation to the coordinator without spawning additional agents. The coordinator can then continue the requested critique workflow. Distinguish source evidence from inference and from behavior you have not verified at runtime. Follow the user's language and requested level of detail.
 
 ## Output Format
 

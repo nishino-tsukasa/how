@@ -7,7 +7,11 @@ A Codex-ready fork of [poteto/how](https://github.com/poteto/how), originally cr
 - **Explain** (default): explore the implementation and explain the concepts, execution flow, boundaries, relevant files, and gotchas.
 - **Critique** (on request): explain first, then assess architectural issues through independent review lenses and summarize the evidence and tradeoffs.
 
-Simple questions run directly in the current agent. Complex questions split into 2–4 exploration angles when the host exposes subagent tools. Critique uses 2–3 critics within the host's concurrency limits. Agents use the host's configured model by default. If delegation is unavailable, the skill performs the passes in the current agent and states that no independent reviews ran. All exploration and critique are read-only.
+Simple questions run directly in the current agent. Complex questions split into 2–4 exploration angles when the host exposes subagent tools, then an independent explainer synthesizes all findings. Critique uses 2–3 critics within the host's concurrency limits. The main agent stays available to the user, coordinates the workers, and integrates their results.
+
+Agents use the host's configured model by default, with fresh contexts where supported. Reasoning effort follows the work: `low` for narrow source scouting, `medium` for straightforward synthesis or bounded assessment, and `high` for difficult analysis or architectural judgment. Explicit user settings take precedence; hosts without effort selection use their configured effort.
+
+If delegation is unavailable, the skill performs the passes in the current agent and states that no independent reviews ran. All exploration, explanation, and critique are read-only. The coordination rules are included in this skill; no separate `orchestrate` installation is required.
 
 ## Install as a Codex plugin
 

@@ -13,7 +13,17 @@ Use **Explain** by default. Add **Critique** only when the user asks for archite
 
 This workflow uses the tools available in the current host. In Codex, use the exposed subagent tools (for example, `spawn_agent` and its wait tools, or the desktop `collaboration` namespace) with their actual schemas. Omit model overrides by default so agents use the host's configured model. If the user requests a model, use it only when the host supports it; report an unavailable requested model instead of silently substituting one.
 
-Delegated exploration and critique are read-only. Put the repository path, question, assigned angle, and this boundary in every agent prompt: inspect source, return findings, make no changes, and do not delegate further. Use a read-only agent configuration when the host offers one; otherwise enforce the boundary through the task instructions. Choose a fresh context when supported and include the relevant prompt template contents so the agent has a self-contained assignment.
+For substantial work, the main agent coordinates delegated exploration, explanation, and critique while remaining available to the user. Give each worker a distinct assignment, track progress and user corrections, and integrate the results. Keep scope and approval decisions with the main agent and the user.
+
+Select reasoning effort separately from the model, honoring the user's explicit settings:
+
+- `low` for narrow, read-only source scouting with a clear question.
+- `medium` for straightforward synthesis or bounded assessment.
+- `high` for difficult cross-module analysis, reconciling conflicting evidence, or complex architectural judgment.
+
+Use the host's supported effort parameter and values. When effort selection is unavailable, inherit the configured effort. A difficult exploration angle can use `high`; split it into narrower scouting tasks when that makes the evidence easier to gather.
+
+Delegated exploration, explanation, and critique are read-only. Put the repository path, question, assigned angle, and this boundary in every agent prompt: inspect source, return findings, make no changes, and do not delegate further. Use a read-only agent configuration when the host offers one; otherwise enforce the boundary through the task instructions. Choose a fresh context when supported (for example, `fork_turns: "none"`) and include the relevant prompt template contents and user constraints so the agent has a self-contained assignment.
 
 Respect the host's available concurrency. Queue remaining angles when slots are limited, wait for every assigned result, and close completed agents when the host supports closing them. If an agent fails, finish that angle yourself or retry within the available tools, and identify any unresolved gap.
 
@@ -40,7 +50,11 @@ Exploration is complete when each angle provides the path it traced, code refere
 
 ### 3. Explain and present
 
-Read [references/explainer-prompt.md](references/explainer-prompt.md) for the communication style and output format. The current agent synthesizes the findings; for simple questions, it writes from its own exploration. Resolve conflicting claims by checking the source. Distinguish code evidence, inference, and behavior that would require runtime verification.
+Read [references/explainer-prompt.md](references/explainer-prompt.md) for the communication style and output format. For complex questions with delegation available, wait for all exploration results, then assign one fresh-context explainer to synthesize them. Give it the original question, repository path, user constraints, all explorer findings and source references, and the filled template. Choose its effort using the rules above. The explainer checks source to resolve conflicts and returns one coherent explanation with remaining evidence gaps.
+
+For simple questions or the single-agent fallback, write the explanation directly from your own exploration. In either path, distinguish code evidence, inference, and behavior that would require runtime verification.
+
+The main agent checks the completed explanation against the question and exploration coverage, resolves material gaps with focused follow-up, and presents the integrated result. Wait for this explanation before starting the requested critique.
 
 Use these sections when they help the reader:
 

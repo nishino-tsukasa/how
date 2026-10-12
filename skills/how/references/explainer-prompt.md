@@ -1,6 +1,6 @@
 # Explainer Prompt Template
 
-Use this template when writing the explanation in the current agent, or when a host delegates synthesis. Fill in the placeholders; for direct exploration, use your own findings.
+For complex questions, give this filled template to the independent explainer after all explorers have returned. For simple questions or the single-agent fallback, use it in the current agent with your own findings. Include the repository path and user constraints in the assignment.
 
 ---
 

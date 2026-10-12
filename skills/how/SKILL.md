@@ -7,7 +7,7 @@ description: Explain how a subsystem, feature, or runtime flow works in the curr
 
 Build a working mental model for an engineer onboarding onto a subsystem. Trace the actual implementation, explain its boundaries and data flow, and cite the files and symbols that support the explanation.
 
-Use **Explain** by default. Add **Critique** only when the user asks for architectural issues, tradeoffs, or improvements.
+Use **Explain** by default, including questions about design rationale and existing tradeoffs. Add **Critique** when the user explicitly asks to evaluate the design, identify architectural problems, or recommend architectural improvements.
 
 ## Host and delegation
 
@@ -35,8 +35,8 @@ If subagent tools are unavailable or delegation is prohibited by higher-priority
 
 Identify the subsystem, feature, or runtime path the user wants to understand. If the scope is ambiguous, state a reasonable interpretation and explore; ask only when the ambiguity blocks useful work.
 
-- **Simple:** one module, a small utility, or a narrow call path. Explore and explain directly in the current agent.
-- **Complex:** multiple services or files, a cross-cutting feature, or a broad architectural overview. Split into 2–4 distinct exploration angles and delegate within the host's limits. For example: data model, runtime orchestration, and rendering or external integrations.
+- **Simple:** a bounded question or short call path, even across several files. Explore and explain directly in the current agent.
+- **Complex:** substantial investigation across distinct concerns that benefit from separate exploration and synthesis. Split into 2–4 distinct exploration angles and delegate within the host's limits. For example: data model, runtime orchestration, and rendering or external integrations.
 
 When in doubt, start with the simple path and expand only if the evidence requires it.
 
@@ -55,16 +55,6 @@ Read [references/explainer-prompt.md](references/explainer-prompt.md) for the co
 For simple questions or the single-agent fallback, write the explanation directly from your own exploration. In either path, distinguish code evidence, inference, and behavior that would require runtime verification.
 
 The main agent checks the completed explanation against the question and exploration coverage, resolves material gaps with focused follow-up, and presents the integrated result. Wait for this explanation before starting the requested critique.
-
-Use these sections when they help the reader:
-
-- **Overview:** what the subsystem does and why it exists.
-- **Key Concepts:** the types, services, and abstractions needed to follow it.
-- **How It Works:** the trigger, execution flow, data transformations, and decision points.
-- **Where Things Live:** the files a newcomer should start reading.
-- **Gotchas:** non-obvious behavior, sharp edges, and evidence gaps.
-
-Follow the user's language and requested level of detail. Reference concrete files and symbols. Include a diagram only when it makes the flow easier to understand.
 
 ## Critique
 

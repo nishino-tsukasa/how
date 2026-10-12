@@ -1,6 +1,7 @@
 ---
 name: how
-description: Explain how a subsystem, feature, or runtime flow works in the current codebase using source evidence. Also use when the user asks to critique that architecture after explaining it.
+description: Explain codebase architecture with source evidence and optional architectural critique.
+disable-model-invocation: true
 ---
 
 # How

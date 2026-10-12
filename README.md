@@ -25,6 +25,8 @@ codex plugin list --marketplace how-plugins
 
 In the desktop plugin browser, select the **How Plugins** marketplace and install **How** after adding the source. Start a new chat after installation so it discovers the skill. The exact browser UI depends on the client version; the commands above provide the CLI route.
 
+This skill runs only when explicitly invoked by the user. Automatic skill selection is disabled with `disable-model-invocation: true` in `SKILL.md` and `policy.allow_implicit_invocation: false` in `agents/openai.yaml`.
+
 Invoke the plugin skill with `$how:how` (or select **how:how** from the skill picker):
 
 ```text
@@ -69,6 +71,7 @@ how/
 │   └── skills -> ../skills
 └── skills/how/
     ├── SKILL.md
+    ├── agents/openai.yaml
     └── references/
         ├── explainer-prompt.md
         ├── explorer-prompt.md
